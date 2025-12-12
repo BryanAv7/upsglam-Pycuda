@@ -15,13 +15,14 @@ app = Flask(__name__)
 GPU_FILTERS = {
     "emboss": ["offset", "factor"],
     "sobel": ["factor"],
-    "gaussiano": ["sigma"],
+    "gauss": ["sigma"],
     "sharpen": ["sharp_factor"]
 }
 
 PY_FILTERS = {
     "sombras_epico": ["highlight_boost", "vignette_strength"],
-    "resaltado_frio": ["blue_boost", "contrast"]
+    "resaltado_frio": ["blue_boost", "contrast"],
+    "marco": [] # New
 }
 
 GPU_DEFAULTS = {
@@ -52,6 +53,8 @@ def process_image():
 
         image = request.files["imagen"]
         filter_name = request.form.get("filtro", "").lower()
+        print(f"Filtro recibido -> '{filter_name}'") # Debug
+
 
         # Validación de extensión
         ext = os.path.splitext(image.filename)[1].lower()
@@ -127,6 +130,17 @@ def process_image():
                     contrast=params["contrast"]
                 )
 
+            elif filter_name == "marco":
+                vertical = "marcos/vertical.png"
+                horizontal = "marcos/horizontal.png"
+
+                NewFilter.filtro_marco_path(
+                    temp_input.name,
+                    temp_output.name,
+                    marco_vertical_path=vertical,
+                    marco_horizontal_path=horizontal
+                )
+
             # Respuesta final en BYTES
             with open(temp_output.name, "rb") as f:
                 processed_bytes = f.read()
@@ -153,5 +167,5 @@ def process_image():
 # INICIO DEL SERVIDOR
 # ==========================================================
 if __name__ == "__main__":
-    print("Iniciando servidor Flask ")
+    print("Iniciando servidor Flask")
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=False)

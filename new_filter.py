@@ -129,3 +129,85 @@ class NewFilter:
         result_pil.save(output_path)
 
         return output_path
+
+
+    # ============================================================
+    #                  FILTRO DE MARCO (NUEVO)
+    # ============================================================
+
+    @staticmethod
+    def filtro_marco(
+        img_np,
+        marco_vertical_path,
+        marco_horizontal_path
+    ):
+        """
+        Superpone un marco PNG transparente sobre la imagen,
+        eligiendo automáticamente el marco según orientación:
+        - Vertical  (alto >= ancho)  -> marco_vertical_path
+        - Horizontal (ancho > alto)  -> marco_horizontal_path
+
+        El marco se redimensiona al tamaño exacto de la imagen.
+        """
+        from PIL import Image
+        import numpy as np
+
+        # Tamaño de la imagen original
+        h, w = img_np.shape[:2]
+
+        # Seleccionar marco según orientación
+        marco_path = (
+            marco_vertical_path
+            if h >= w
+            else marco_horizontal_path
+        )
+
+        # Cargar marco con canal alpha
+        marco = Image.open(marco_path).convert("RGBA")
+
+        # Redimensionar marco al tamaño exacto de la imagen
+        marco = marco.resize((w, h), Image.LANCZOS)
+
+        marco_np = np.array(marco)              # (h, w, 4)
+        marco_rgb = marco_np[:, :, :3]          # RGB del marco
+        marco_alpha = marco_np[:, :, 3:] / 255.0  # Alpha normalizado
+
+        # Convertir imagen base a float32
+        base = img_np.astype(np.float32)
+
+        # Superposición
+        result = base * (1 - marco_alpha) + marco_rgb * marco_alpha
+
+        return np.clip(result, 0, 255).astype(np.uint8)
+
+
+    @staticmethod
+    def filtro_marco_path(
+        input_path,
+        output_path,
+        marco_vertical_path,
+        marco_horizontal_path
+    ):
+        """
+        Carga imagen, aplica el filtro de marco y guarda el resultado.
+        Funciona igual que los demás filtros _path.
+        """
+        from PIL import Image
+        import numpy as np
+
+        # Cargar la imagen base en RGB
+        pil_img = Image.open(input_path).convert("RGB")
+        img_np = np.array(pil_img)
+
+        # Aplicar filtro
+        result_np = NewFilter.filtro_marco(
+            img_np,
+            marco_vertical_path,
+            marco_horizontal_path
+        )
+
+        # Guardar
+        result_pil = Image.fromarray(result_np)
+        result_pil.save(output_path)
+
+        return output_path
